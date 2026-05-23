@@ -1,0 +1,11 @@
+{
+  "name": "한국전쟁 전략",
+  "short_name": "KW Tactics",
+  "description": "Korean War grid tactics 1945-1953",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1a1612",
+  "theme_color": "#c9a227",
+  "orientation": "portrait-primary",
+  "lang": "ko"
+}

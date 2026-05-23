@@ -1,0 +1,76 @@
+/** Extended debate scripts — longer, argumentative exchanges */
+const narr = (ko, en) => ({ type: "narrator", ko, en });
+const line = (id, nameKo, nameEn, faction, ko, en) => ({ type: "line", id, nameKo, nameEn, faction, ko, en });
+const doc = (docId) => ({ type: "document", docId });
+
+export const EXTENDED_DEBATES = {
+  1: [
+    narr("1945년 8월, 해방 직후의 서울. 태극기가 걸리기도 전에, 건국준비위원회와 미군정 사이의 첫 충돌이 경복궁 앞 회의실에서 벌어진다. 밖에서는 건준 지원자와 좌·우 청년들이 서로 고함을 지르고, 안에서는 두 사람의 목소리가 벽을 뚫을 듯 높아진다.", "August 1945, Seoul. Before the flag is raised, the Committee and U.S. Military Government clash at Gyeongbok Palace. Outside, rival crowds shout; inside, two voices fill the room."),
+    line("yuh", "여운형", "Yuh Woon-hyung", "rok", "해방은 연합군이 하사한 선물이 아닙니다. 우리 민족이 일제에 맞서 쌓아 올린 결과이고, 건국준비위원회는 그 역사의 연장선에서 서울의 치안과 행정을 맡을 자격이 있습니다. 미군이 들어왔다고 해서 모든 것을 처음부터 다시 쓸 수는 없습니다.", "Liberation was not a gift from the Allies. Our people earned it resisting Japan, and the Committee continues that history—we are qualified to govern Seoul's order. You cannot rewrite everything because troops arrived."),
+    line("hodge", "존 하지", "Lt. Gen. Hodge", "us", "자격 이야기는 나중에 하시죠. 지금 서울에는 무장 자치단체가 여럿이고, 좌·우가 칼을 갈고 있습니다. 미군정이 없으면 하루 만에 도시가 스스로를 태웁니다. 무장 단체는 해산하고, 총기는 우리가 보관합니다—이것이 현실입니다.", "Credentials later. Seoul has armed factions and blades sharpened left versus right. Without military government the city burns itself in a day. Disarm militias—we secure weapons. That is reality."),
+    line("yuh", "여운형", "Yuh", "rok", "총을 거두면 치안은 누가 맡습니까? 일본 잔존 경찰을 그대로 둘 수도 없고, 건준의 민정위원만으로는 밤마다 터지는 폭동을 막기 어렵습니다. ‘민정’과 ‘군정’의 차이를 말씀드리는 것이지, 무정부 상태를 원하는 것이 아닙니다.", "If we disarm, who keeps order? We cannot keep Japanese-era police, yet Committee civil agents alone cannot stop nightly riots. I speak of civilian versus military rule—not anarchy."),
+    line("hodge", "하지", "Hodge", "us", "폭동은 폭동으로 다룹니다. 건준은 협력 단체로 인정하지만, 지휘권은 미군정에 있습니다. 여러분이 거리에서 질서를 유지하는 동안 우리는 일본 잔존 기관을 정리합니다. 그 과정에서 불쾌한 일이 생길 수 있지만, 그것이 전쟁 이후의 행정입니다.", "Riots are riots. We recognize the Committee as a partner, but command is ours. While you help streets, we dismantle Japanese institutions—unpleasant work, but postwar administration."),
+    line("yuh", "여운형", "Yuh", "rok", "지휘권이 미군정에만 있다면, 우리가 ‘해방’이라 부르는 것은 ‘점령’으로 보이는 사람도 많습니다. 좌파 청년들은 이미 그렇게 말하고 있고, 우파도 여러분을 신뢰하지 않습니다. 대화로 풀자고 했지, 총구로 누르자고 하지는 않았습니다.", "If only you command, many call 'liberation' occupation. Left youth say it; the right does not trust you either. We asked for talks—not rifles pressed to throats."),
+    doc("usmg_1945"),
+    line("hodge", "하지", "Hodge", "us", "공보에도 적혀 있습니다. 치안 유지가 최우선이며, 폭도와 무장 집단은 무력 진압 대상입니다. 오늘은 피를 보지 맙시다. 그러나 경복궁 일대 통제권은 넘길 수 없습니다.", "The bulletin states it—order first; armed mobs may be suppressed. No blood today. But we will not yield control of the palace district."),
+    line("yuh", "여운형", "Yuh", "rok", "…알겠습니다. 오늘은 피를 보지 않겠습니다. 그러나 민족의 자존심만큼은 양보할 수 없고, 건준은 서울 시민 앞에서 물러서지 않을 것입니다. 우리가 할 수 있는 것은 ‘최소한의 충돌’을 지키는 것뿐입니다.", "…Very well—no blood today. But we cannot yield national dignity, and the Committee will not vanish before citizens. We can only guard against the worst clashes."),
+    line("hodge", "하지", "Hodge", "us", "최소한의 충돌이면 족합니다. 회의는 여기까지 하죠. 현장 지휘관에게 전달하겠습니다—폭도는 체포, 민간인 피해는 최소화. 그리고 여러분도 건준 지도부에게 말하십시오. 총기를 거두지 않으면, 다음엔 대화가 아니라 공보가 말하게 됩니다.", "Minimal clashes will do. This meeting ends. I will tell field command—arrest rioters, minimize civilian harm. Tell your leadership to collect weapons, or next time the bulletin speaks—not dialogue."),
+    narr("회의는 격렬하게 끝났지만, 당장 총격전으로 번지지는 않았다. 그러나 서울 골목마다 긴장은 쌓였고, 오늘의 작전은 그 첫 균열을 막는 일이다.", "The meeting ended fiercely but did not erupt into gunfire—yet every alley tightened. Today's operation holds that first crack."),
+  ],
+  6: [
+    narr("1950년 6월 25일 새벽, 안개 속에서 북쪽 포성이 울렸다. ‘소규모 침범’이라는 보고는 몇 시간 만에 전면전으로 바뀌었고, 지휘소의 전화는 끊기기 시작했다.", "June 25, 1950 dawn: guns in the mist. 'Minor incursion' became full war within hours; phones began to die."),
+    line("kang", "강건", "Kang Kon", "kpa", "폭풍 작전은 이미 시작됐습니다! T-34는 서울로 직진하고, 보병은 남쪽으로 분리합니다. 3일 안에 전쟁을 끝내겠다고 말했지, 망설이면 그 말이 거짓이 됩니다. 후퇴하는 적을 추격하십시오—망설이는 자에게 서울은 영원히 멀어집니다.", "Operation Pokpoong has begun! T-34s drive on Seoul, infantry splits south. We said three days—hesitate and that becomes a lie. Pursue retreat— to the hesitant, Seoul is always far away."),
+    line("chae", "채병덕", "Chae Byong-deok", "rok", "북한이… 전면 침공이라고요? 연락이 두절되고, 38선 방어선은 이미 무너졌습니다! 전차대는 어디 있습니까—대전에도, 수원에도 전화가 안 됩니다! 지금 서울 시민을 어떻게 대피시키겠습니까, 사령관님도 말씀하셔야 합니다!", "Full invasion? Communications are dead—the 38th line collapsed! Where are the tank destroyers—Daejeon, Suwon, nothing answers! How do we evacuate Seoul's civilians—say it plainly!"),
+    line("kang", "강건", "Kang", "kpa", "대피? 서울 시민은 ‘해방’을 맞이할 것입니다. 너희 사기는 이미 무너졌고, 우리는 속도로 싸웁니다. 망설이면 부산까지 갑니다—그때 미국이 와도 늦습니다. 이것은 위협이 아니라 작전 일정입니다.", "Evacuate? Citizens will greet liberation. Your morale broke—we fight by speed. Hesitate and we reach Busan—America arrives too late. This is the schedule, not a threat."),
+    line("chae", "채병덕", "Chae", "rok", "사기가 무너졌다고요? 병사들은 잠도 못 자고 싸우고 있습니다! 탄약은 줄고, 부상자는 쌓이고, 지휘관은 전화만 끊깁니다! ‘시간’을 번다고 했지, 서울을 그냥 내주라고는 못 합니다!", "Morale broke? Soldiers fight without sleep—ammo shrinks, wounded pile up, phones die! You said buy time—not hand us Seoul!"),
+    doc("war_625"),
+    line("kang", "강건", "Kang", "kpa", "라디오 방송을 들었을 겁니다. 우리는 ‘반격’입니다. 역사는 우리 편이라고 믿습니다. 서울 해방은 정의의 일부이고, 너희가 내준 시간은 이미 끝났습니다.", "You heard the broadcast—we 'counter-attack.' History is ours. Seoul's liberation is justice; your time ended."),
+    line("chae", "채병덕", "Chae", "rok", "그렇다면 남은 건 피뿐이군요. 모두 남쪽으로! 한 대라도 더 막아라—한강까지 시간을 벌면 미군이 옵니다. 버리는 건 명예가 아니라 ‘시간’입니다. 그 시간을 위해 오늘은 싸웁니다.", "Then only blood remains. Everyone south! Stop one more column—buy time to the Han until Americans come. We discard not honor but minutes—and fight for those minutes today."),
+    narr("아직 한강 방어선은 남아 있다. 오늘은 포위망 속에서 살아남아 탈출 지점으로 몰아넣는 싸움이다.", "The Han line still holds. Today we survive the pocket and drive toward escape."),
+  ],
+  7: [
+    narr("1950년 6월 28일, 서울은 함락 직전이다. 한강 교량 위에 연기가 피어오르고, 강북에 남은 병력의 무전은 절박해진다.", "June 28, 1950: Seoul nearly falls. Smoke over Han bridges; desperate radios from the north bank."),
+    line("kimh", "김홍일", "Kim Hong-il", "rok", "한강교를 폭파합니다. 강북에 남은 병력은 즉시 남단으로 건너라—배도 보내고, 마지막까지 구조하겠습니다. 그러나 교량은 지금 폭파합니다. 늦으면 T-34가 그대로 건넙니다.", "Blow the bridges. Troops north cross now—boats out, rescue to the end. But blow them now—late means T-34s cross intact."),
+    line("staff", "참모", "Staff", "rok", "사령관님, 아직 강북에 부대가 수백 명 남았습니다! 폭파 시각이 너무 빠릅니다—배가 부족하고, 민간인도 남아 있습니다! 한 번만 더 연기하시면…", "General, hundreds remain north! Too soon—boats are few, civilians remain! Delay once more—"),
+    line("kimh", "김홍일", "Kim", "rok", "연기하면 누가 책임집니까? T-34가 서울 시가지로 굴러 들어오면, 남쪽 방어선도 무너집니다. 서울을 잠시 내주더라도, 한강 남안은 지켜야 합니다. 그것이 오늘의 숫자입니다.", "Who answers if we delay? T-34s roll into Seoul and the southern line breaks too. Yield Seoul for now—hold the south bank. Those are today's numbers."),
+    line("staff", "참모", "Staff", "rok", "숫자요? 그 숫자가 사람입니다! 남겨진 병사들은 가족에게 돌아가지 못할 수도 있습니다. 우리가 ‘시간을 산다’고 말할 때, 그들은 ‘버려졌다’고 말할 겁니다.", "Numbers are people! Those left may never see families. When we say we bought time, they will say we were abandoned."),
+    line("kimh", "김홍일", "Kim", "rok", "알고 있습니다. 그래서 배를 더 보내고, 구조는 끝까지 합니다. 그러나 교량은 지금 폭파합니다—지휘관의 임무는 살아 있는 자를 최대한 건너게 하는 것이지, 모두를 구원하는 것이 아닙니다.", "I know. More boats—rescue to the end. But blow the bridges now—a commander's task is to maximize survivors, not save everyone."),
+    line("kimh", "김홍일", "Kim", "rok", "한강 남안 방어선을 사수하십시오. 더 이상 물러설 곳은 없습니다. 오늘의 목표는 탈출 지점—생존자를 남쪽으로 모으는 것입니다.", "Hold the south bank. Nowhere left to fall. Today's objective is the escape zone—herd survivors south."),
+    narr("폭발음 뒤에 울먹임이 있었다. 오늘 작전은 강을 건너, 지정된 탈출 구역에 도달하는 싸움이다.", "After the blast, weeping. Today's fight is to cross the river and reach the escape zone."),
+  ],
+  2: [
+    narr("1946년 가을, 신탁통치 찬반 논쟁이 전국을 덮었다. 대구에서는 하룻밤 새 시위가 폭동으로 바뀌었고, 경찰과 좌익·우익 청년들이 같은 거리에서 서로 다른 ‘정의’를 외쳤다.", "Fall 1946: trusteeship debates engulfed the nation. In Daegu, overnight protests became riots—police and rival youth shouting different ideas of justice."),
+    line("pak", "박헌영", "Pak Hon-yong", "rebel", "모스크바가 약속한 신탁통치를 왜 부정합니까? 남조선 정치는 미제의 꼭두각시 쇼이고, 대구 시민이 거리에 나선 것은 ‘폭동’이 아니라 ‘저항’입니다. 당신들이 총을 들이대면, 역사는 누가 먼저 피를 냈는지 기억할 것입니다.", "Why deny Moscow's trusteeship? Southern politics is an American puppet show—Daegu citizens resist, they do not 'riot.' Point rifles and history will remember who drew blood first."),
+    line("cho", "조병옥", "Cho Byung-ok", "rok", "신탁이든 뭐든, 지금 거리에 불이 났습니다! 경찰은 폭동을 진압하라—민간인 사상부터 막아라! 이유를 따지기 전에 불부터 꺼야 합니다. 대전·순천으로 번지기 전에 끊어야 한다고 몇 번을 말했습니까?", "Trusteeship or not—the streets burn! Suppress riots—spare civilians first! Put out the fire before debating causes. I have said cut it off before Suncheon and Daejeon ignite!"),
+    line("pak", "박헌영", "Pak", "rebel", "진압? 그 말이 치안입니까, 학살입니까? 우리는 무장하지 않았다고 말하지만, 당신들이 먼저 총을 쐈을 때 누가 무장했는지 신문은 쓰지 않습니다. 대구 시민이 총구를 든 이유를 묻지 말고, 왜 굶주렸는지부터 물으십시오.", "Suppress—is that order or massacre? We say we are unarmed, but when you fire first the papers never ask who armed whom. Don't ask why Daegu took rifles—ask why they starved."),
+    line("cho", "조병옥", "Cho", "rok", "이유는 소련의 지령이지 ‘민심’이 아닙니다. 좌익 지도부는 모스크바에서 오는 전보를 기다리고, 우파는 미군정을 신뢰하지 않습니다. 그 사이에서 죽는 건 정치인이 아니라 상인과 학생입니다. 오늘은 대구를 되찾는 날입니다—대전 방면 적 동향도 보고하십시오.", "The cause is Moscow's orders—not 'the people.' Left leaders wait for telegrams; the right distrusts the MG. Merchants and students die between them. Today we retake Daegu—report enemy movement toward Daejeon."),
+    doc("daegu_riot_1946"),
+    line("pak", "박헌영", "Pak", "rebel", "신문은 우리를 폭도로만 부릅니다. 그러나 역사는 편집되지 않습니다. 우리가 물러서면, 다음은 부산이 아니라 ‘대화’조차 없어집니다.", "Papers call us mobs—but history is not edited. If we yield, next comes not Busan but the end of dialogue itself."),
+    line("cho", "조병옥", "Cho", "rok", "역사는 나중에 쓰고, 오늘은 대구를 되찾습니다. 작전 목표는 시가지 핵심 거점—거기를 점령해야 불길이 꺼집니다. 지휘관님, 부대는 전진하십시오.", "History later—today we retake Daegu. The objective is the city core—hold it and the fire dies. Commander, advance your units."),
+    narr("논쟁은 끝나지 않았지만 명령은 내려졌다. 오늘 전투는 거점 점령과 거리 통제의 싸움이다.", "Argument never ended—but orders were issued. Today's fight is to seize ground and control the streets."),
+  ],
+  10: [
+    narr("1950년 8월, 낙동강 방어선. ‘부산만 지키면 된다’는 말은 전선 병사들에게는 ‘더 이상 물러설 곳이 없다’는 뜻이었다.", "August 1950: the Naktong line. 'Hold Busan' meant to soldiers: nowhere left to retreat."),
+    line("walker", "월턴 워커", "Walton Walker", "us", "낙동강을 넘지 못하게 하십시오. 한 치도 물러서면 부산은 끝입니다. 보급선이 끊기고, 해상 철수도 불가능해집니다. 방어 지시를 내렸다고 해서 제자리에 서 있으라는 뜻이 아닙니다—적이 압박하면 교란하고, 거점은 반드시 지키십시오.", "Do not let them cross the Naktong. One step back ends Busan—supply lines cut, no naval evacuation. Defense orders do not mean stand still—harass the enemy, but hold every key position."),
+    line("rok", "유엔군 참모", "UN Staff", "us", "사령관님, 아군 일부가 후방으로 밀리고 있습니다. 사기가 떨어지면 방어선이 무너집니다. ‘방어’만 반복하면 병사들은 탈출로를 찾습니다.", "General, some units are pushed back. Morale cracks the line. Repeat 'defend' only and soldiers look for escape routes."),
+    line("walker", "워커", "Walker", "us", "탈출로는 없습니다. 있어도 부산 항구뿐입니다. 낙동강 건널목과 고지를 번갈아 사수하십시오—8턴 이상 버티면 증원이 옵니다. 그 전까지는 피 한 방울로도 시간을 사야 합니다.", "There is no escape—only Busan port. Alternate holding fords and hills—hold eight turns and reinforcements arrive. Until then, buy time with every drop of blood."),
+    line("rok", "유엔군 참모", "UN Staff", "us", "8턴이면… 오늘만 해도 접전이 열 번 넘습니다. 탄약이 떨어지면 어떻게 합니까?", "Eight turns—today alone we have ten contacts. What when ammunition runs out?"),
+    line("walker", "워커", "Walker", "us", "탄약이 떨어지면 총검을 들고, 총검이 부러지면 돌을 들어라. 낙동강은 지리가 아니라 심리선입니다. 오늘의 임무는 방어 거점을 점유한 채 버티는 것입니다.", "When ammo ends, bayonets—when bayonets break, stones. The Naktong is a psychological line. Today's mission: hold while occupying the defense positions."),
+    narr("강물은 붉어지고, 무전은 끊겼다. 지휘관의 명령은 이제 ‘전진’이 아니라 ‘버티되, 거점에서 물러나지 말라’는 것이었다.", "The river ran red; radios died. Orders were no longer 'advance' but 'endure—do not leave the positions.'"),
+  ],
+  18: [
+    narr("1950년 11월, 양지리 밤. 중국인민지원군이 눈보라 속에서 나타났고, UN군 전선은 ‘소규모 전술 후퇴’에서 ‘생존 투쟁’으로 바뀌었다.", "November 1950, night at Unsan. Chinese forces emerged in blizzards; the UN line shifted from 'tactical withdrawal' to survival."),
+    line("peng", "펑더화이", "Peng Dehuai", "pla", "미제 침략군은 장수호를 건널 수 없습니다! 인민지원군은 집으로 돌아가는 길을 막는 자를 부수고, 산골을 뚫고 내려옵니다. 당신들의 라디오가 ‘후퇴’라고 말할 때, 우리는 ‘포위’라고 부릅니다.", "American invaders cannot cross the Yalu! The Volunteers break those who block our home—we come through the mountains. When your radio says 'withdrawal,' we call it 'encirclement.'"),
+    line("walker", "월턴 워커", "Walton Walker", "us", "저들은 ‘소수’가 아닙니다! 눈 속에서 무한히 나옵니다. 즉시 남쪽으로—탈출 구역으로 집결하십시오. 장비를 버리더라도 인원을 살리십시오. 이것은 패배가 아니라 재편입니다.", "They are not a 'few'! They emerge endlessly from snow. South now—rally to the escape zone. Save men even if you drop equipment. This is reorganization, not defeat."),
+    line("peng", "펑더화이", "Peng", "pla", "재편? 그 말은 패배의 다른 이름입니다. 산길을 막았으니, 당신들이 선택할 것은 ‘항복’과 ‘얼어 죽음’뿐입니다.", "Reorganization? Another word for defeat. We hold the passes—your choices are surrender or freeze."),
+    line("walker", "워커", "Walker", "us", "선택은 우리가 합니다. 부대는 분산하지 말고, 지도에 표시된 탈출 구역으로 이동하십시오. 방어 명령을 내려도 최종 목표는 남쪽 생존선입니다.", "We choose. Do not scatter—move to the marked escape zone. Even under defense orders, the final objective is the southern survival line."),
+    narr("눈보라 속에서 총성이 멀어지지 않았다. 오늘은 적을 격파하기보다, 지정된 탈출 지점에 부대를 모으는 싸움이다.", "Gunfire never faded in the blizzard. Today the fight is not victory but gathering units at the escape point."),
+  ],
+  19: [
+    narr("1950년 12월, 장진호. 혹한 속 UN군과 해병대는 포위망을 뚫고 흥남으로 향해야 했다.", "December 1950, Chosin. Marines and UN troops in bitter cold had to break encirclement toward Hungnam."),
+    line("smith", "O. P. 스미스", "Oliver P. Smith", "us", "후퇴가 아니라 전진입니다—다만 남쪽으로. 얼어붙은 병사를 버리지 마십시오. 공중 지원과 함께, 지도의 탈출 구역까지 육로로 집결하십시오.", "Not retreat—attack, southward. Do not abandon frozen men. With air support, march to the escape zone on the map."),
+    line("pla", "중공군 지휘관", "PLA Commander", "pla", "산맥이 우리 편입니다. 밤에 움직이고, 낮에는 숨어라—미군의 보급선을 끊으면 저절로 무너집니다.", "The mountains favor us. Move at night, hide by day—cut supply and they collapse."),
+    line("smith", "스미스", "Smith", "us", "보급이 끊겨도 부대는 움직입니다. 명령이 ‘방어’든 ‘후퇴’든 상관없이, 생존 목표는 탈출 지점입니다. 늦으면 항구도 얼어붙습니다.", "Cut supply and we still move. Whether orders say defend or withdraw, survival means the escape point. Delay and the harbor freezes too."),
+    narr("얼음 위에 피가 얼었다. 오늘 작전은 포위를 뚫고 탈출 구역에 도달하는 것이다.", "Blood froze on ice. Today's operation: break out and reach the escape zone."),
+  ],
+};

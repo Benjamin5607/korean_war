@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>한국전쟁 전략 시뮬레이션</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#c9a227" />
+  <link rel="stylesheet" href="css/style.css?v=20" />
+  <link rel="preload" href="assets/scenes/scene-storm.png" as="image" />
+</head>
+<body>
+  <div id="file-warning" style="display:none;position:fixed;inset:0;z-index:9999;background:#1a1612;color:#e8e0d4;padding:2rem;font-family:sans-serif;text-align:center">
+    <h2 style="color:#c9a227">로컬 서버가 필요합니다</h2>
+    <p style="margin:1rem 0;line-height:1.6">index.html을 직접 열면 게임이 작동하지 않습니다.<br><code>start.bat</code>을 더블클릭하거나 아래 명령을 실행하세요.</p>
+    <pre style="background:#2a2420;padding:1rem;text-align:left;display:inline-block">cd korean_war
+python -m http.server 8080</pre>
+    <p style="margin-top:1rem">그 후 <a href="http://localhost:8080" style="color:#c9a227">http://localhost:8080</a> 접속</p>
+  </div>
+  <div id="app"></div>
+  <script>
+    if (location.protocol === "file:") {
+      document.getElementById("file-warning").style.display = "flex";
+      document.getElementById("file-warning").style.flexDirection = "column";
+      document.getElementById("file-warning").style.alignItems = "center";
+      document.getElementById("file-warning").style.justifyContent = "center";
+    }
+  </script>
+  <script type="module" src="js/main.js?v=20"></script>
+</body>
+</html>
