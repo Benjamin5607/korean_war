@@ -9,6 +9,8 @@ import { clearCombatFx, recordHit, recordShell } from "./combatEffects.js";
 import { getHistoricalForceBriefing, summarizeAllyComposition } from "../data/historicalForces.js";
 import { getScenario } from "../data/scenarios.js";
 import { getMissionRequirements } from "../data/missionBalance.js";
+import { calcBattleDamage, applyCommanderMoraleBoost, getCommanderUnit } from "./combatMods.js";
+import { getOfficer, officerName } from "../data/officers.js";
 
 export function initCommanderState(state) {
   if (!state.missionReq && state.scenarioId) {
@@ -256,6 +258,12 @@ export function buildSituationReport(state) {
   const lines = [];
   if (lang === "ko") {
     lines.push(`【작전일지 ${state.turn}일차】 ${state.map.displayName || "전선"}`);
+    if (state.officer) {
+      const cmd = getCommanderUnit(state);
+      lines.push(
+        `▣ 지휘관: ${officerName(state.officer, lang)} — 오라 ${state.officer.auraRadius}칸${cmd ? ` · 위치 (${cmd.x},${cmd.y})` : ""}`
+      );
+    }
     lines.push(`▣ 물자: 탄약·보급 ${supplyPct}% | 사기 ${moralePct}% | 통신 품질 ${commsPct}% | 정찰 신뢰도 ${intelPct}%`);
     if (foe.length) {
       const nearest = foe.reduce((best, e) => {
@@ -577,15 +585,6 @@ function applyCommanderOrderPenalties(state, order) {
   }
 }
 
-function calcDamage(attacker, defender, defBonus) {
-  let atk = attacker.atk + (attacker._orderAtk || 0) - (attacker._orderAtkPenalty || 0);
-  if (attacker.antiTank && defender.type === "tank") atk += attacker.antiTank;
-  if (defender.armor) atk = Math.max(1, atk - defender.armor);
-  if (defender._orderDef) atk = Math.max(1, atk - Math.floor(defender._orderDef / 3));
-  const reduction = 1 - defBonus / 100;
-  let dmg = Math.floor(atk * reduction * (0.88 + Math.random() * 0.24));
-  return Math.max(1, dmg);
-}
 
 function runAllyCombat(state, u, order) {
   const foes = enemies(state);
@@ -593,12 +592,12 @@ function runAllyCombat(state, u, order) {
     const dist = manhattan(u.x, u.y, e.x, e.y);
     if (dist <= u.range) {
       const def = getTerrainStats(getTerrainAt(state.map, e.x, e.y)).def + (e._orderDef || 0);
-      const dmg = calcDamage(u, e, def);
+      const dmg = calcBattleDamage(u, e, state, state.units, def);
       e.hp -= dmg;
       recordHit(state, u, e, dmg);
       if (e.hp > 0 && dist <= e.range) {
         const counterDef = getTerrainStats(getTerrainAt(state.map, u.x, u.y)).def + (u._orderDef || 0);
-        const cdmg = Math.max(1, Math.floor(calcDamage(e, u, counterDef) * 0.45));
+        const cdmg = Math.max(1, Math.floor(calcBattleDamage(e, u, state, state.units, counterDef) * 0.45));
         u.hp -= cdmg;
         recordHit(state, e, u, cdmg);
       }
@@ -664,7 +663,7 @@ export function runEnemyPhase(state) {
     }
     if (bestDist <= e.range) {
       const def = getTerrainStats(getTerrainAt(state.map, target.x, target.y)).def;
-      const dmg = calcDamage(e, target, def);
+      const dmg = calcBattleDamage(e, target, state, state.units, def);
       target.hp -= dmg;
       recordHit(state, e, target, dmg);
     } else {
@@ -740,6 +739,7 @@ export function issueCommandOrder(state, orderId) {
   pushLog(state, lang === "ko" ? `▶ 사령관 지시: ${order.ko}` : `▶ Command: ${order.en}`);
 
   applyCommanderOrderPenalties(state, order);
+  applyCommanderMoraleBoost(state);
   applyOrderEffects(state, order);
   runAllyAutoPhase(state, order);
   runEnemyPhase(state);

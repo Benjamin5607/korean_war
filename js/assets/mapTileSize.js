@@ -2,11 +2,11 @@
 export function computeMapTilePx(cols, rows, unitCount = 0) {
   const vw = typeof window !== "undefined" ? window.innerWidth : 400;
   const vh = typeof window !== "undefined" ? window.innerHeight : 700;
-  const maxW = Math.min(vw * 0.98, 640);
-  const maxH = Math.min(vh * 0.68, 720);
-  const fromW = Math.floor((maxW - 8) / cols);
-  const fromH = Math.floor((maxH - 8) / rows);
-  const maxPx = unitCount > 36 ? 52 : unitCount > 24 ? 58 : 72;
-  const minPx = unitCount > 36 ? 36 : unitCount > 24 ? 40 : 42;
+  const maxW = Math.min(vw * 0.99, 820);
+  const maxH = Math.min(vh * 0.82, 880);
+  const fromW = Math.floor((maxW - 4) / cols);
+  const fromH = Math.floor((maxH - 4) / rows);
+  const maxPx = unitCount > 40 ? 62 : unitCount > 28 ? 72 : 88;
+  const minPx = unitCount > 40 ? 44 : unitCount > 28 ? 50 : 54;
   return Math.min(maxPx, Math.max(minPx, Math.min(fromW, fromH)));
 }

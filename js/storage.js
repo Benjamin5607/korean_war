@@ -21,6 +21,10 @@ export function defaultProfile() {
     unlockedScenario: 1,
     currentScenario: null,
     lang: "ko",
+    officersUnlocked: ["yuh"],
+    lastOfficer: "yuh",
+    lastFormation: "line",
+    preferDelegate: false,
   };
 }
 

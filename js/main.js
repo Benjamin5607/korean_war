@@ -7,6 +7,12 @@ import {
   getMissionText,
   serializeBattle,
   deserializeBattle,
+  selectUnit,
+  moveUnit,
+  attackUnit,
+  endPlayerTurn,
+  getMoveTiles,
+  getAttackTiles,
 } from "./game/battle.js";
 import {
   initCommanderState,
@@ -18,7 +24,17 @@ import {
   tickFieldReports,
 } from "./game/commander.js";
 import { UNIT_TYPES } from "./game/units.js";
-import { getTerrainAt } from "./game/terrain.js";
+import { getTerrainAt, manhattan } from "./game/terrain.js";
+import {
+  FORMATIONS,
+  getOfficer,
+  officerName,
+  getUnlockedOfficerIds,
+  suggestOfficerForScenario,
+  estimateScenarioPower,
+  powerVerdict,
+  unlockOfficersAfterVictory,
+} from "./data/officers.js";
 import { getDialogues } from "./data/dialogues.js";
 import { getUnitSpriteHTML, getFactionLabel, getFactionFlag } from "./assets/unitSprites.js";
 import { applyMapBackground } from "./assets/mapBackgrounds.js";
@@ -37,6 +53,7 @@ let pendingScenarioId = null;
 let dialogueIndex = 0;
 let reportPulseTimer = null;
 let titleSlideTimer = null;
+let battlePrep = { officerId: "yuh", formation: "line" };
 
 function $(sel) {
   return app.querySelector(sel);
@@ -61,13 +78,21 @@ function render() {
   if (currentScreen === "briefing") updateBriefingMission();
   if (currentScreen === "dialogue") bindDialogueEvents();
   if (currentScreen === "battle" && battleState) {
+    renderTacticalToolbar();
     renderBattleGrid();
-    renderCommanderPanel();
-    bindOrderChoices();
-    startReportPulse();
+    if (battleState.delegateMode) {
+      renderCommanderPanel();
+      bindOrderChoices();
+      startReportPulse();
+    } else {
+      renderCompactBattleLog();
+      stopReportPulse();
+    }
+    bindBattleGrid();
   } else {
     stopReportPulse();
   }
+  if (currentScreen === "dialogue") scrollDialogueChat();
   if (currentScreen === "title") initTitleScreenEffects();
   else stopTitleSlide();
 }
@@ -137,7 +162,8 @@ function buildScreens() {
 
     <div class="screen ${currentScreen === "battle" ? "active" : ""}" id="screen-battle">
       ${buildBattleHud()}
-      <div class="battle-layout commander-layout-v2">
+      <div class="battle-layout commander-layout-v2 tactical-layout" id="battle-layout-root">
+        <div class="tactical-toolbar" id="tactical-toolbar"></div>
         <div class="commander-battle-row">
           <div class="battle-map-frame commander-map-frame">
             <div class="map-title-bar" id="map-title-bar"></div>
@@ -147,12 +173,12 @@ function buildScreens() {
               </div>
             </div>
           </div>
-          <aside class="order-rail" id="order-choices" aria-label="${t("mapOrders")}"></aside>
+          <aside class="order-rail order-rail-delegate" id="order-choices" aria-label="${t("mapOrders")}"></aside>
         </div>
-        <div class="situation-report-panel">
+        <div class="situation-report-panel" id="battle-bottom-panel">
           <div class="report-panel-header">
-            <span class="report-panel-title">${t("situationReport")}</span>
-            <span class="report-panel-hint">${t("reportStreaming")}</span>
+            <span class="report-panel-title" id="report-panel-title">${t("situationReport")}</span>
+            <span class="report-panel-hint" id="report-panel-hint">${t("reportStreaming")}</span>
           </div>
           <div class="situation-report-feed" id="situation-report"></div>
         </div>
@@ -228,74 +254,77 @@ function buildCampaignList() {
   return html;
 }
 
+function buildDialogueChatEntry(entry, lang, isLatest) {
+  const anim = isLatest ? " chat-msg-new" : "";
+  if (entry.type === "narrator") {
+    const text = lang === "en" ? entry.en : entry.ko;
+    return `<div class="chat-msg chat-narrator${anim}">
+      <span class="chat-narrator-label">${t("narrator")}</span>
+      <p class="chat-text">${text}</p>
+    </div>`;
+  }
+  if (entry.type === "document") {
+    const doc = getDocument(entry.docId);
+    if (!doc) return "";
+    const paper = lang === "en" ? doc.paperEn : doc.paperKo;
+    const date = lang === "en" ? doc.dateEn : doc.dateKo;
+    const headline = lang === "en" ? doc.headlineEn : doc.headlineKo;
+    const bodyText = lang === "en" ? doc.bodyEn : doc.bodyKo;
+    return `<div class="chat-msg chat-document${anim}">
+      <div class="chat-doc-header">📰 ${paper} · ${date}</div>
+      <strong class="chat-doc-headline">${headline}</strong>
+      <p class="chat-text">${bodyText}</p>
+      <span class="chat-doc-note">${t("documentNote")}</span>
+    </div>`;
+  }
+  const name = lang === "en" ? entry.nameEn : entry.nameKo;
+  const text = lang === "en" ? entry.en : entry.ko;
+  const portrait = getPortraitUrl(entry.id, entry.faction);
+  const side = entry.faction === "kpa" || entry.faction === "pla" || entry.faction === "rebel" ? "left" : "right";
+  return `<div class="chat-msg chat-line chat-side-${side} faction-border-${entry.faction || "rok"}${anim}">
+    <img class="chat-avatar" src="${portrait}" alt="" loading="lazy" />
+    <div class="chat-bubble">
+      <span class="chat-name">${name}</span>
+      <p class="chat-text">${text}</p>
+    </div>
+  </div>`;
+}
+
 function buildDialogue() {
   const lines = getDialogues(pendingScenarioId);
   if (!lines.length) return "";
-  const entry = lines[dialogueIndex] || lines[lines.length - 1];
   const lang = getLang();
   const sc = getScenario(pendingScenarioId);
   const sceneImg = sc ? getSceneImage(sc.scene) : "";
   const sceneBg = sceneImg ? `url('${sceneImg}')` : "none";
-  const progress = `${dialogueIndex + 1} / ${lines.length}`;
-  const nextLabel = dialogueIndex >= lines.length - 1 ? t("toBriefing") : t("dialogueNext");
-
-  let body = "";
-  if (entry.type === "narrator") {
-    const text = lang === "en" ? entry.en : entry.ko;
-    body = `
-      <div class="dialogue-narrator">
-        <span class="narrator-tag">${t("narrator")}</span>
-        <p class="dialogue-text">${text}</p>
-      </div>`;
-  } else if (entry.type === "document") {
-    const doc = getDocument(entry.docId);
-    const art = getDocumentArtUrl();
-    if (doc) {
-      const paper = lang === "en" ? doc.paperEn : doc.paperKo;
-      const date = lang === "en" ? doc.dateEn : doc.dateKo;
-      const headline = lang === "en" ? doc.headlineEn : doc.headlineKo;
-      const bodyText = lang === "en" ? doc.bodyEn : doc.bodyKo;
-      body = `
-        <div class="document-card anim-doc-in">
-          ${art ? `<img class="document-art" src="${art}" alt="" />` : ""}
-          <div class="document-meta">
-            <span class="document-paper">${paper}</span>
-            <span class="document-date">${date}</span>
-          </div>
-          <h3 class="document-headline">${headline}</h3>
-          <p class="document-body">${bodyText}</p>
-          <p class="document-note">${t("documentNote")}</p>
-        </div>`;
-    }
-  } else {
-    const name = lang === "en" ? entry.nameEn : entry.nameKo;
-    const text = lang === "en" ? entry.en : entry.ko;
-    const portrait = getPortraitUrl(entry.id, entry.faction);
-    body = `
-      <div class="dialogue-speaker-row">
-        <img class="dialogue-portrait-img" src="${portrait}" alt="" />
-        <div class="dialogue-box faction-border-${entry.faction || "rok"}">
-          <div class="dialogue-speaker">${name}</div>
-          <p class="dialogue-text">${text}</p>
-        </div>
-      </div>`;
-  }
+  const visible = lines.slice(0, dialogueIndex + 1);
+  const chatHtml = visible
+    .map((entry, i) => buildDialogueChatEntry(entry, lang, i === visible.length - 1))
+    .join("");
+  const nextLabel = dialogueIndex >= lines.length - 1 ? t("toBriefing") : t("chatContinue");
 
   return `
-    <div class="top-bar">
+    <div class="top-bar dialogue-top">
       <button class="icon-btn" data-action="back-campaign">←</button>
       <h2>${t("storyScene")} · ${tScenario(pendingScenarioId, "title")}</h2>
+      <span class="dialogue-progress">${dialogueIndex + 1} / ${lines.length}</span>
     </div>
-    <div class="dialogue-stage" style="background-image:${sceneBg}">
+    <div class="dialogue-chat-screen" style="background-image:${sceneBg}">
       <div class="dialogue-stage-vignette"></div>
-      <div class="dialogue-body">${body}</div>
-      <div class="dialogue-progress">${progress}</div>
+      <div class="dialogue-chat-log" id="dialogue-chat-log">${chatHtml}</div>
     </div>
-    <div class="briefing-actions">
+    <div class="briefing-actions dialogue-chat-actions">
       <button class="menu-btn" data-action="dialogue-skip">${t("dialogueSkip")}</button>
       <button class="menu-btn primary" data-action="dialogue-next">${nextLabel}</button>
     </div>
   `;
+}
+
+function scrollDialogueChat() {
+  requestAnimationFrame(() => {
+    const el = document.getElementById("dialogue-chat-log");
+    if (el) el.scrollTop = el.scrollHeight;
+  });
 }
 
 function bindDialogueEvents() {
@@ -331,6 +360,10 @@ function preloadScenarioAssets(id) {
 function startScenarioFlow(id) {
   pendingScenarioId = id;
   dialogueIndex = 0;
+  battlePrep = {
+    officerId: suggestOfficerForScenario(id, profile),
+    formation: profile.lastFormation || "line",
+  };
   preloadScenarioAssets(id);
   const lines = getDialogues(id);
   currentScreen = lines.length ? "dialogue" : "briefing";
@@ -341,20 +374,63 @@ function buildBriefing() {
   const id = pendingScenarioId;
   const sc = getScenario(id);
   if (!sc) return "";
+  const lang = getLang();
   const sceneImg = getSceneImage(sc.scene);
   const bgUrl = sceneImg ? `url('${sceneImg}')` : "none";
+  const power = estimateScenarioPower(id, profile, battlePrep);
+  const verdict = powerVerdict(power.ratio, lang);
+  const pct = Math.min(100, Math.round((power.ratio / 1.4) * 100));
+  const officerIds = getUnlockedOfficerIds(profile);
+  const officerCards = officerIds
+    .map((oid) => {
+      const o = getOfficer(oid);
+      const active = battlePrep.officerId === oid;
+      const portrait = getPortraitUrl(o.portrait, "rok");
+      return `<button type="button" class="prep-officer-card${active ? " active" : ""}" data-prep-officer="${oid}">
+        <img class="prep-portrait" src="${portrait}" alt="" loading="lazy" />
+        <span class="prep-officer-name">${officerName(o, lang)}</span>
+        <span class="prep-officer-title">${lang === "ko" ? o.titleKo : o.titleEn}</span>
+        <span class="prep-officer-aura">${t("commanderAura")} ${o.auraRadius}</span>
+      </button>`;
+    })
+    .join("");
+  const formationCards = Object.values(FORMATIONS)
+    .map((f) => {
+      const active = battlePrep.formation === f.id;
+      return `<button type="button" class="prep-formation-card${active ? " active" : ""}" data-prep-formation="${f.id}">
+        <strong>${lang === "ko" ? f.ko : f.en}</strong>
+        <span>${lang === "ko" ? f.descKo : f.descEn}</span>
+      </button>`;
+    })
+    .join("");
+
   return `
     <div class="top-bar">
       <button class="icon-btn" data-action="back-campaign">←</button>
       <h2>${id}. ${tScenario(id, "title")}</h2>
     </div>
-    <div class="briefing-body">
+    <div class="briefing-body briefing-body-v2">
       <div class="briefing-scene" style="background-image:${bgUrl}">
         <span class="briefing-scene-label">${t("location")}: ${tScenario(id, "location")}</span>
       </div>
       <p class="briefing-text">${tScenario(id, "story")}</p>
       <p class="briefing-chars"><strong>${t("characters")}:</strong> ${tScenario(id, "chars")}</p>
       <div class="mission-box" id="briefing-mission"></div>
+      <section class="briefing-prep">
+        <h3 class="prep-heading">${t("battlePrep")}</h3>
+        <div class="power-compare">
+          <div class="power-bar-wrap">
+            <div class="power-bar-labels"><span>${t("allyPower")} ${power.ally}</span><span>${t("enemyPower")} ${power.enemy}</span></div>
+            <div class="power-bar"><div class="power-bar-ally" style="width:${pct}%"></div></div>
+            <p class="power-verdict">${verdict}</p>
+          </div>
+        </div>
+        <h4 class="prep-sub">${t("selectCommander")}</h4>
+        <div class="prep-officer-row">${officerCards}</div>
+        <h4 class="prep-sub">${t("selectFormation")}</h4>
+        <div class="prep-formation-row">${formationCards}</div>
+        <p class="prep-triangle-hint">${t("weaponTriangle")}</p>
+      </section>
     </div>
     <div class="briefing-actions">
       <button class="menu-btn" data-action="dialogue-replay">${t("storyScene")}</button>
@@ -366,21 +442,26 @@ function buildBriefing() {
 
 function buildBattleHud() {
   if (!battleState) return "";
+  const lang = getLang();
   const mapName = battleState.map?.displayName || "";
   const c = battleState.commander || {};
+  const officer = battleState.officer || getOfficer(battleState.officerId);
+  const form = FORMATIONS[battleState.formation] || FORMATIONS.line;
   return `
     <div class="top-bar">
       <button class="icon-btn" data-action="back-campaign">←</button>
       <h2>#${battleState.scenarioId} ${tScenario(battleState.scenarioId, "title")}</h2>
       <button class="icon-btn" data-action="open-save">💾</button>
     </div>
-    <div class="battle-hud">
-      <div class="hud-item">${t("commandPost")}</div>
+    <div class="battle-hud battle-hud-v2">
+      <div class="hud-item hud-commander">${t("selectCommander")}: <span>${officerName(officer, lang)}</span></div>
+      <div class="hud-item">${lang === "ko" ? form.ko : form.en}</div>
       <div class="hud-item">${t("tacticalMap")}: <span>${mapName}</span></div>
       <div class="hud-item">${t("turn")}: <span>${battleState.turn}/${battleState.turnLimit}</span></div>
       <div class="hud-item">${t("supplies")}: <span>${Math.round(c.supplies ?? 0)}%</span></div>
       <div class="hud-item">${t("morale")}: <span>${Math.round(c.morale ?? 0)}%</span></div>
-      <div class="hud-item">${t("mission")}: <span id="mission-text">${getMissionText(battleState)}</span></div>
+      <div class="hud-item hud-mission">${t("mission")}: <span id="mission-text">${getMissionText(battleState)}</span></div>
+      <div class="hud-item hud-triangle">${t("weaponTriangle")}</div>
     </div>
   `;
 }
@@ -516,6 +597,121 @@ function renderCombatFxLayer(stage, fxList, tilePx) {
   }
 }
 
+function isDelegateMode() {
+  return !!battleState?.delegateMode;
+}
+
+function updateBattleLayoutMode() {
+  const root = document.getElementById("battle-layout-root");
+  const rail = document.getElementById("order-choices");
+  const panel = document.getElementById("battle-bottom-panel");
+  if (!root) return;
+  root.classList.toggle("delegate-mode", isDelegateMode());
+  if (rail) rail.classList.toggle("order-rail-visible", isDelegateMode());
+  if (panel) panel.classList.toggle("compact-report", !isDelegateMode());
+}
+
+function renderTacticalToolbar() {
+  const bar = document.getElementById("tactical-toolbar");
+  if (!bar || !battleState) return;
+  updateBattleLayoutMode();
+  const lang = getLang();
+  const delegating = isDelegateMode();
+  const sel = battleState.units.find((u) => u.id === battleState.selectedId);
+  let unitLine = t("tacticalHint");
+  if (sel && !delegating) {
+    const st = sel.acted ? t("acted") : sel.moved ? t("moved") : t("ready");
+    unitLine = `${t("unitStatus")}: ${sel.label} · ${st}`;
+  }
+  bar.innerHTML = `
+    <div class="tactical-toolbar-inner">
+      <span class="tactical-hint">${delegating ? t("delegateHint") : unitLine}</span>
+      <div class="tactical-toolbar-btns">
+        <button type="button" class="tactical-btn ${delegating ? "" : "active"}" data-action="mode-direct">${t("directControl")}</button>
+        <button type="button" class="tactical-btn ${delegating ? "active" : ""}" data-action="mode-delegate">${t("delegateControl")}</button>
+        <button type="button" class="tactical-btn tactical-end" data-action="end-turn" ${delegating || battleState.result ? "disabled" : ""}>${t("endTurnBtn")}</button>
+      </div>
+    </div>`;
+  bar.querySelectorAll("[data-action]").forEach((btn) => {
+    btn.onclick = () => handleAction(btn.dataset.action);
+  });
+}
+
+function renderCompactBattleLog() {
+  const reportEl = document.getElementById("situation-report");
+  const titleEl = document.getElementById("report-panel-title");
+  const hintEl = document.getElementById("report-panel-hint");
+  if (!reportEl || !battleState) return;
+  if (titleEl) titleEl.textContent = t("mission");
+  if (hintEl) hintEl.textContent = getMissionText(battleState);
+  const lang = getLang();
+  const ally = battleState.units.filter((u) => u.side === "ally" && u.hp > 0 && !u.civ).length;
+  const foe = battleState.units.filter((u) => u.side === "enemy" && u.hp > 0).length;
+  reportEl.innerHTML = `<p class="report-line compact">${lang === "ko" ? `아군 ${ally} · 적 ${foe} · ${getMissionText(battleState)}` : `Allies ${ally} · Enemy ${foe} · ${getMissionText(battleState)}`}</p>`;
+}
+
+function bindBattleGrid() {
+  const grid = document.getElementById("battle-grid");
+  if (!grid || !battleState || battleState.delegateMode) return;
+  grid.querySelectorAll(".tile").forEach((tile) => {
+    tile.onclick = (e) => {
+      if (e.target.closest(".unit")) {
+        const unitEl = e.target.closest(".unit");
+        const parent = unitEl?.parentElement;
+        if (parent?.dataset.x != null) {
+          handleBattleTileClick(parseInt(parent.dataset.x, 10), parseInt(parent.dataset.y, 10));
+        }
+        return;
+      }
+      handleBattleTileClick(parseInt(tile.dataset.x, 10), parseInt(tile.dataset.y, 10));
+    };
+  });
+}
+
+function handleBattleTileClick(x, y) {
+  if (!battleState || battleState.result || battleState.delegateMode || battleState.phase !== "ally") return;
+
+  const onTile = battleState.units.filter((u) => u.hp > 0 && u.x === x && u.y === y);
+  const allyHere = onTile.find((u) => u.side === "ally" && !u.civ);
+  const enemyHere = onTile.find((u) => u.side === "enemy");
+
+  if (battleState.selectedId) {
+    const targets = getAttackTiles(battleState);
+    if (enemyHere && targets.some((t) => t.id === enemyHere.id)) {
+      battleState = attackUnit(battleState, enemyHere.id);
+      afterTacticalAction();
+      return;
+    }
+    const moves = getMoveTiles(battleState);
+    if (moves.some((t) => t.x === x && t.y === y)) {
+      battleState = moveUnit(battleState, x, y);
+      renderBattleGrid();
+      renderTacticalToolbar();
+      return;
+    }
+  }
+
+  if (allyHere) {
+    battleState = selectUnit(battleState, allyHere.id);
+    renderBattleGrid();
+    renderTacticalToolbar();
+  }
+}
+
+function afterTacticalAction() {
+  renderBattleGrid();
+  renderTacticalToolbar();
+  renderCompactBattleLog();
+  if (battleState?.result) showResultModal();
+}
+
+function tacticalEndTurn() {
+  if (!battleState || battleState.delegateMode || battleState.result) return;
+  battleState.selectedId = null;
+  endPlayerTurn(battleState);
+  afterTacticalAction();
+}
+
 function renderBattleGrid() {
   const grid = document.getElementById("battle-grid");
   const mapStage = document.getElementById("map-stage");
@@ -543,6 +739,13 @@ function renderBattleGrid() {
   const fireTiles = new Set(combatFx.filter((f) => f.fx != null).map((f) => `${f.fx},${f.fy}`));
   const objectives = map.objectives || [];
   const esc = map.escape;
+  const cmdUnit = units.find((u) => u.id === battleState.commanderUnitId && u.hp > 0);
+  const auraR = battleState.officer?.auraRadius ?? 2;
+  const tactical = !battleState.delegateMode && battleState.phase === "ally";
+  const moveTiles = tactical && battleState.selectedId ? getMoveTiles(battleState) : [];
+  const attackTargets = tactical && battleState.selectedId ? getAttackTiles(battleState) : [];
+  const moveSet = new Set(moveTiles.map((t) => `${t.x},${t.y}`));
+  const attackSet = new Set(attackTargets.map((t) => `${t.x},${t.y}`));
 
   for (let y = 0; y < map.rows; y++) {
     for (let x = 0; x < map.cols; x++) {
@@ -551,6 +754,13 @@ function renderBattleGrid() {
       tile.className = `tile ${terr}`;
       tile.dataset.x = x;
       tile.dataset.y = y;
+      if (tactical) tile.classList.add("tile-interactive");
+      if (moveSet.has(`${x},${y}`)) tile.classList.add("tile-move");
+      if (attackSet.has(`${x},${y}`)) tile.classList.add("tile-attack");
+      if (battleState.selectedId) {
+        const su = units.find((u) => u.id === battleState.selectedId);
+        if (su && su.x === x && su.y === y) tile.classList.add("tile-selected");
+      }
 
       const mapLabel = (map.labels || []).find((l) => l.x === x && l.y === y);
       if (mapLabel) {
@@ -581,6 +791,10 @@ function renderBattleGrid() {
         tile.title = escFlag.title;
       }
 
+      if (cmdUnit && manhattan(x, y, cmdUnit.x, cmdUnit.y) <= auraR) {
+        tile.classList.add("commander-aura");
+      }
+
       const key = `${x},${y}`;
       if (hitTiles.has(key)) tile.classList.add("tile-hit");
       if (fireTiles.has(key)) tile.classList.add("tile-firing");
@@ -591,6 +805,7 @@ function renderBattleGrid() {
         const el = document.createElement("div");
         el.className = `unit ${unit.side} ${unit.type} faction-${unit.faction}`;
         if (unit.civ) el.classList.add("civ");
+        if (unit.isCommander) el.classList.add("unit-commander");
         const moved = recentMoves.some((m) => m.id === unit.id && m.to.x === x && m.to.y === y);
         if (moved) el.classList.add("unit-animated");
         const hitHere = combatFx.some(
@@ -605,10 +820,12 @@ function renderBattleGrid() {
         const hpPct = (unit.hp / unit.maxHp) * 100;
         const tag = unit.civ ? (lang === "en" ? "Civ" : "민") : getFactionLabel(unit.faction, lang);
         const flag = getFactionFlag(unit.faction);
-        el.innerHTML = `${getUnitSpriteHTML(unit)}
+        const cmdBadge = unit.isCommander ? `<span class="unit-cmd-star" title="${t("selectCommander")}">★</span>` : "";
+        el.innerHTML = `${getUnitSpriteHTML(unit)}${cmdBadge}
           <span class="unit-faction-tag"><span class="unit-flag" aria-hidden="true">${flag}</span>${tag}</span>
           <div class="unit-hp"><div class="unit-hp-fill" style="width:${hpPct}%"></div></div>`;
         el.title = `${unit.label} HP ${unit.hp}/${unit.maxHp}`;
+        if (unit.id === battleState.selectedId) el.classList.add("unit-selected");
         tile.appendChild(el);
       });
 
@@ -782,15 +999,32 @@ function bindEvents() {
     };
   });
 
+  app.querySelectorAll("[data-prep-officer]").forEach((btn) => {
+    btn.onclick = () => {
+      battlePrep.officerId = btn.dataset.prepOfficer;
+      profile.lastOfficer = battlePrep.officerId;
+      saveProfile(profile);
+      render();
+    };
+  });
+
+  app.querySelectorAll("[data-prep-formation]").forEach((btn) => {
+    btn.onclick = () => {
+      battlePrep.formation = btn.dataset.prepFormation;
+      profile.lastFormation = battlePrep.formation;
+      saveProfile(profile);
+      render();
+    };
+  });
 }
 
 function updateBriefingMission() {
   const el = document.getElementById("briefing-mission");
   if (!el || !pendingScenarioId) return;
   const sc = getScenario(pendingScenarioId);
-  const tmp = initBattle(pendingScenarioId, profile);
+  const tmp = initBattle(pendingScenarioId, profile, battlePrep);
   if (tmp) initCommanderState(tmp);
-  el.textContent = `${t("mission")}: ${getMissionText(tmp)} | ${t("turnLimit", sc.turnLimit)} | ${t("commanderModeBrief")}`;
+  el.textContent = `${t("mission")}: ${getMissionText(tmp)} | ${t("turnLimit", sc.turnLimit)} | ${t("directControl")}`;
 }
 
 function handleAction(action) {
@@ -851,7 +1085,10 @@ function handleAction(action) {
       render();
       break;
     case "start-battle":
-      battleState = initBattle(pendingScenarioId, profile);
+      profile.lastOfficer = battlePrep.officerId;
+      profile.lastFormation = battlePrep.formation;
+      battleState = initBattle(pendingScenarioId, profile, battlePrep);
+      battleState.delegateMode = !!profile.preferDelegate;
       initCommanderState(battleState);
       profile.currentScenario = pendingScenarioId;
       saveProfile(profile);
@@ -872,9 +1109,30 @@ function handleAction(action) {
       showToast(t("saved"));
       break;
     }
+    case "mode-direct":
+      if (battleState) {
+        battleState.delegateMode = false;
+        profile.preferDelegate = false;
+        saveProfile(profile);
+        render();
+      }
+      break;
+    case "mode-delegate":
+      if (battleState) {
+        battleState.delegateMode = true;
+        profile.preferDelegate = true;
+        saveProfile(profile);
+        refreshCommanderTurn(battleState, false);
+        render();
+      }
+      break;
+    case "end-turn":
+      tacticalEndTurn();
+      break;
     case "result-retry":
       document.getElementById("modal-result")?.classList.remove("show");
-      battleState = initBattle(pendingScenarioId || battleState.scenarioId, profile);
+      battleState = initBattle(pendingScenarioId || battleState.scenarioId, profile, battlePrep);
+      battleState.delegateMode = !!profile.preferDelegate;
       initCommanderState(battleState);
       render();
       break;
@@ -910,6 +1168,7 @@ function showResultModal() {
     if (battleState.scenarioId >= profile.unlockedScenario && battleState.scenarioId < 30) {
       profile.unlockedScenario = battleState.scenarioId + 1;
     }
+    unlockOfficersAfterVictory(profile, battleState.scenarioId);
     msg.textContent = t("missionComplete");
   } else {
     title.textContent = t("defeat");
@@ -941,6 +1200,7 @@ function loadSaveSlot(id) {
   if (slot.battle) {
     battleState = deserializeBattle(slot.battle);
     if (!battleState.commander) initCommanderState(battleState);
+    if (battleState.delegateMode == null) battleState.delegateMode = !!profile.preferDelegate;
     else if (!battleState.commander.reportFeed?.length) {
       battleState.commander.reportFeed = [];
       refreshCommanderTurn(battleState, true);

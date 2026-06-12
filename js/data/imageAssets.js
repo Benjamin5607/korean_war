@@ -88,6 +88,7 @@ export const PORTRAIT_IMAGES = {
   dean: P("portrait-us-officer.png"),
   freeman: P("portrait-us-officer.png"),
   osmith: P("portrait-us-officer.png"),
+  ridgway: P("portrait-us-officer.png"),
   almond: P("portrait-us-officer.png"),
   ridgway: P("portrait-us-officer.png"),
   clark: P("portrait-us-officer.png"),

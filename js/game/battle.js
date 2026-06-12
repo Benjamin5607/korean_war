@@ -7,13 +7,16 @@ import { resolveUnitFaction } from "../data/historicalForces.js";
 import { getLoadout } from "../data/scenarioLoadouts.js";
 import { getVariant } from "../data/unitCatalog.js";
 import { getMissionRequirements } from "../data/missionBalance.js";
+import { getOfficer } from "../data/officers.js";
+import { assignCommanderUnit, applyFormationToUnits, calcBattleDamage } from "./combatMods.js";
+import { recordHit } from "./combatEffects.js";
 
 let uid = 0;
 function nextId() {
   return `u${++uid}`;
 }
 
-export function initBattle(scenarioId, profile) {
+export function initBattle(scenarioId, profile, prep = {}) {
   uid = 0;
   const scenario = getScenario(scenarioId);
   const lang = getLang();
@@ -55,8 +58,15 @@ export function initBattle(scenarioId, profile) {
     civsSaved: 0,
     result: null,
     starsEarned: 0,
-    mode: "commander",
+    mode: "tactical",
+    delegateMode: false,
+    officerId: prep.officerId || profile.lastOfficer || "yuh",
+    formation: prep.formation || profile.lastFormation || "line",
+    commanderUnitId: null,
   };
+  state.officer = getOfficer(state.officerId);
+  assignCommanderUnit(state);
+  applyFormationToUnits(state);
   return state;
 }
 
@@ -74,6 +84,8 @@ export function deserializeBattle(data) {
     }
   }
   if (data && data.captureCounter == null) data.captureCounter = 0;
+  if (data?.officerId && !data.officer) data.officer = getOfficer(data.officerId);
+  if (data && data.delegateMode == null) data.delegateMode = false;
   if (data?.scenarioId && data.mission) {
     const scenario = getScenario(data.scenarioId);
     if (scenario) {
@@ -121,14 +133,18 @@ export function attackUnit(state, targetId) {
   if (!targets.find((t) => t.id === targetId)) return state;
 
   const defTerr = getTerrainStats(getTerrainAt(state.map, target.x, target.y));
-  const dmg = calcDamage(u, target, defTerr.def);
+  const dmg = calcBattleDamage(u, target, state, state.units, defTerr.def);
   target.hp -= dmg;
+  recordHit(state, u, target, dmg);
   u.acted = true;
 
   if (target.hp > 0) {
-    const counter = calcDamage(target, u, getTerrainStats(getTerrainAt(state.map, u.x, u.y)).def);
-    u.hp -= Math.floor(counter * 0.5);
+    const counterDef = getTerrainStats(getTerrainAt(state.map, u.x, u.y)).def;
+    const counter = calcBattleDamage(target, u, state, state.units, counterDef);
+    u.hp -= Math.floor(counter * 0.45);
+    recordHit(state, target, u, counter);
   }
+  checkMission(state);
   return state;
 }
 
@@ -177,7 +193,11 @@ function runEnemyTurn(state) {
     }
     if (bestDist <= e.range) {
       const def = getTerrainStats(getTerrainAt(state.map, target.x, target.y)).def;
-      target.hp -= calcDamage(e, target, def);
+      const dmg = state.officer
+        ? calcBattleDamage(e, target, state, state.units, def)
+        : calcDamage(e, target, def);
+      target.hp -= dmg;
+      recordHit(state, e, target, dmg);
     } else {
       const dx = Math.sign(target.x - e.x);
       const dy = Math.sign(target.y - e.y);
